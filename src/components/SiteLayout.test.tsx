@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { App } from '@/App'
 import { SiteLayout } from '@/components/SiteLayout'
 
@@ -85,6 +85,38 @@ describe('site shell', () => {
         name: '我确认本次投稿中的所有图片符合本站非商业展示与下载要求，并理解且承担相应版权责任。',
       }),
     ).toBeInTheDocument()
+  })
+
+  it('downloads the ZIP automatically when the submission is prepared', async () => {
+    const user = userEvent.setup()
+    const downloadClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined)
+    const { container } = renderApp('/upload')
+    const fileInput = container.querySelector<HTMLInputElement>(
+      'input[type="file"]',
+    )
+
+    await user.upload(
+      fileInput!,
+      new File([new Uint8Array([1, 2, 3])], 'memory.jpg', {
+        type: 'image/jpeg',
+      }),
+    )
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: '我确认本次投稿中的所有图片符合本站非商业展示与下载要求，并理解且承担相应版权责任。',
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: /下一步/ }))
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(downloadClick).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole('button', { name: '重新下载 ZIP' }),
+    ).toBeInTheDocument()
+
+    downloadClick.mockRestore()
   })
 
   it('routes a global search to the gallery without a document reload', async () => {

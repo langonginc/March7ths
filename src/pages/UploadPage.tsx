@@ -243,7 +243,9 @@ export function UploadPage() {
         manifest: buildManifestItem(draft),
       }))
       const result = await buildSubmissionPackage(sources)
-      setPreparedPackage({ blob: result.blob, fileName: result.fileName })
+      const nextPackage = { blob: result.blob, fileName: result.fileName }
+      setPreparedPackage(nextPackage)
+      downloadPackage(nextPackage)
     } catch (error) {
       setErrors([
         error instanceof Error ? error.message : '整合文件生成失败，请重试。',
@@ -253,12 +255,11 @@ export function UploadPage() {
     }
   }
 
-  function downloadPackage() {
-    if (!preparedPackage) return
-    const url = URL.createObjectURL(preparedPackage.blob)
+  function downloadPackage(packageToDownload: PreparedPackage) {
+    const url = URL.createObjectURL(packageToDownload.blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = preparedPackage.fileName
+    link.download = packageToDownload.fileName
     document.body.append(link)
     link.click()
     link.remove()
@@ -532,7 +533,10 @@ export function UploadPage() {
             </button>
             <p className="section-kicker">MEMORY READY</p>
             <h2 id="submission-title">这段记忆已整理好</h2>
-            <p>请按顺序完成以下步骤。GitHub Issue 创建后，机器人会自动校验并准备 PR。</p>
+            <p>
+              投稿 ZIP 已自动开始下载。请按顺序完成以下步骤，GitHub Issue
+              创建后，机器人会自动校验并准备 PR。
+            </p>
             <ol className="submission-steps">
               <li>
                 <span>1</span>
@@ -560,9 +564,9 @@ export function UploadPage() {
               <button
                 className="secondary-button"
                 type="button"
-                onClick={downloadPackage}
+                onClick={() => downloadPackage(preparedPackage)}
               >
-                下载 ZIP
+                重新下载 ZIP
               </button>
               <a
                 className="primary-button"
