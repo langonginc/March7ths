@@ -1,0 +1,84 @@
+name: Build and publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 选择本次发布的版本更新类型
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: march7ths-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare version
+        id: release
+        run: npx tsx scripts/prepare-release.ts "${{ inputs.bump }}"
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /March7ths/
+
+      - name: Commit version and tag
+        if: steps.release.outputs.reused != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit \
+            -m "chore(release): v${VERSION}" \
+            -m "release-run:${GITHUB_RUN_ID}"
+          git tag "v${VERSION}"
+          git push origin HEAD:main "refs/tags/v${VERSION}"
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+
+      - name: Publish gh-pages branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          PAGES_DIR="$(mktemp -d)"
+          WORKTREE_DIR="$(mktemp -d)"
+          cp -R dist/. "$PAGES_DIR/"
+          git worktree add --detach "$WORKTREE_DIR" HEAD
+          cd "$WORKTREE_DIR"
+          git switch --orphan gh-pages-publish
+          git rm -rf .
+          cp -R "$PAGES_DIR"/. .
+          git add -A
+          git commit -m "deploy: v${VERSION}"
+          git push --force origin HEAD:gh-pages
+        env:
+          VERSION: ${{ steps.release.outputs.version }}

@@ -1,0 +1,118 @@
+name: issue_bot
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [closed]
+
+concurrency:
+  group: issue-bot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  process-submission:
+    if: >-
+      github.event_name == 'issues' &&
+      (startsWith(github.event.issue.title, '[图片投稿]') ||
+      contains(github.event.issue.labels.*.name, 'image-submission'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate and prepare submission
+        id: process
+        continue-on-error: true
+        run: npx tsx scripts/process-submission.ts --event "$GITHUB_EVENT_PATH" --root .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+
+      - name: Report validation failure
+        if: steps.process.outcome == 'failure'
+        run: |
+          if [ ! -f .bot/error.md ]; then
+            mkdir -p .bot
+            echo "投稿包处理失败，请确认附件有效后重新提交。" > .bot/error.md
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body-file .bot/error.md
+          exit 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+
+      - name: Create submission branch
+        if: steps.process.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH_NAME"
+          git add public/metadata.json public/metadata public/images public/thumbnails
+          git commit -m "feat: add images from issue #$ISSUE_NUMBER"
+          git push --force origin "HEAD:refs/heads/$BRANCH_NAME"
+        env:
+          BRANCH_NAME: bot/submission-${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+
+      - name: Open pull request
+        if: steps.process.outcome == 'success'
+        run: |
+          gh label create image-submission --color "B9A3E3" --description "March7ths 图片投稿" --force
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "图片投稿：Issue #$ISSUE_NUMBER" \
+            --body-file .bot/pr-body.md \
+            --label image-submission > .bot/pr-url.txt
+          printf "\n\n收录 PR：%s\n" "$(cat .bot/pr-url.txt)" >> .bot/success.md
+          gh issue comment "$ISSUE_NUMBER" --body-file .bot/success.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: bot/submission-${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+
+  refresh-open-submissions:
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'image-submission')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh open generated PRs
+        run: npx tsx scripts/refresh-submission-prs.ts
+        env:
+          GH_TOKEN: ${{ github.token }}

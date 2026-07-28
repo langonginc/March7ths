@@ -1,0 +1,41 @@
+{
+  "name": "march7ths",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && node scripts/create-spa-fallback.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "bot:process": "tsx scripts/process-submission.ts",
+    "bot:refresh": "tsx scripts/refresh-submission-prs.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.20",
+    "fuse.js": "^7.1.0",
+    "jszip": "^3.10.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "7.18.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "@types/yauzl": "^2.10.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "file-type": "^21.3.0",
+    "jsdom": "^28.0.0",
+    "sharp": "0.35.3",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "yauzl": "^3.2.0"
+  }
+}

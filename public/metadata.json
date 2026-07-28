@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "img_2ea3511763e4fad0",
+      "fileName": "img_2ea3511763e4fad0.png",
+      "originalFileName": "hero.png",
+      "name": "于长夜重返大地",
+      "game": {
+        "id": "honkai-star-rail",
+        "label": "崩坏：星穹铁道"
+      },
+      "character": {
+        "id": "evernight",
+        "label": "长夜月"
+      },
+      "creationType": {
+        "id": "official-game-pv",
+        "label": "游戏画面与 PV"
+      },
+      "tags": [
+        "长夜月",
+        "夕阳",
+        "官方画面"
+      ],
+      "updatedAt": "2026-07-28"
+    }
+  ]
+}
