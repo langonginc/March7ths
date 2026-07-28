@@ -75,7 +75,6 @@ jobs:
           git worktree add --detach "$WORKTREE_DIR" HEAD
           cd "$WORKTREE_DIR"
           git switch --orphan gh-pages-publish
-          git rm -rf .
           cp -R "$PAGES_DIR"/. .
           git add -A
           git commit -m "deploy: v${VERSION}"
