@@ -24,6 +24,26 @@
         "官方画面"
       ],
       "updatedAt": "2026-07-28"
+    },
+    {
+      "id": "img_a851c38d02443b64",
+      "fileName": "img_a851c38d02443b64.png",
+      "originalFileName": "5.png",
+      "name": "长夜月 PV",
+      "game": {
+        "id": "honkai-star-rail",
+        "label": "崩坏：星穹铁道"
+      },
+      "character": {
+        "id": "evernight",
+        "label": "长夜月"
+      },
+      "creationType": {
+        "id": "official-game-pv",
+        "label": "游戏画面与 PV"
+      },
+      "tags": [],
+      "updatedAt": "2026-07-28"
     }
   ]
 }
